@@ -8,7 +8,7 @@ const {
   getLastBlock,
   createHash,
   nextBlock,
-} = require("./chainedBlockasdf");
+} = require("./chainedBlock");
 
 function isValidBlockStructure(block) {
   return (
@@ -54,16 +54,28 @@ function addBlock(newBlock) {
   return false;
 }
 
+// 체인 검증하기
+function isValidChain(newBlocks) {
+  if (JSON.stringify(newBlocks[0]) !== JSON.stringify(Blocks[0])) {
+    return false;
+  }
+
+  var tempBlocks = [newBlocks[0]];
+  for (let i = 0; i < newBlocks.length; i++) {
+    if (isValidNewBlock(newBlock[i], tempBlocks[i - 1])) {
+      tempBlocks.push(newBlocks[i]);
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 // const block = nextBlock(["kimchi"]);
 // addBlock(block);
 // addBlock(block);
 // addBlock(["melchi1"]);
 
 module.exports = {
-  Blocks,
-  createHash,
-  getLastBlock,
-  nextBlock,
-
   addBlock,
 };
