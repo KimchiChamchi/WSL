@@ -4,6 +4,9 @@ const cryptojs = require("crypto-js");
 const random = require("random");
 const { broadcast } = require("./p2pServer");
 
+const BLOCK_GENERATION_INTERVAL = 10; // second 블록 생성 간격(10초마다)
+const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // in blocks 난이도 조정 간격(블록 10개마다)
+
 class Block {
   constructor(header, body) {
     this.header = header;
@@ -268,6 +271,59 @@ function findBlock(
   }
 }
 
+// 난이도
+function getDifficulty(blocks) {
+  const lastBlock = blocks[blocks.length - 1];
+  if (
+    // 제네시스 블록이 아니고,
+    lastBlock.header.index !== 0 &&
+    // 블록이 10번째 때 마다
+    lastBlock.header.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0
+  ) {
+    // 난이도 조절
+    return getAdjustDifficulty(lastBlock, blocks);
+  }
+  return lastBlock.header.difficulty;
+}
+
+// 난이도 조정
+function getAdjustDifficulty(lastBlock, blocks) {
+  // 이전 조정 블록?
+  const prevAdjustmentBlock =
+    blocks[blocks.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
+  // 실제 경과 시간
+  const elapsedTime =
+    lastBlock.header.timestamp - prevAdjustmentBlock.header.timestamp;
+  // 예상 시간
+  const expectedTime =
+    BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
+
+  // 예상시간/2 가 실제경과시간보다 크면
+  if (expectedTime / 2 > elapsedTime) {
+    return prevAdjustmentBlock.header.difficulty + 1;
+    // 예상시간*2 가 실제경과시간보다 작으면
+  } else if (expectedTime * 2 < elapsedTime) {
+    return prevAdjustmentBlock.header.difficulty - 1;
+  } else {
+    return prevAdjustmentBlock.header.difficulty;
+  }
+}
+
+// 시간 만드는 함수
+function getCurrentTimestamp() {
+  return math.round(Date().getTime() / 1000);
+}
+
+function isValidTimestamp(newBlock, prevBlock) {
+  if (newBlock.header.timestamp - prevBlock.header.timestamp > 60) {
+    return false;
+  }
+  if (getCurrentTimestamp() - newBlock.header.timestamp > 60) {
+    return false;
+  }
+  return true;
+}
+
 module.exports = {
   Blocks,
   createHash,
@@ -276,4 +332,6 @@ module.exports = {
   getVersion,
   getBlocks,
   addBlock,
+  isValidTimestamp,
+  hashMatchesDifficulty,
 };

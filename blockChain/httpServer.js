@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { getBlocks, nextBlock, getVersion } = require("./chainedBlockasdf");
+const { getBlocks, nextBlock, getVersion } = require("./chainedBlock");
 const { addBlock, Blocks } = require("./checkValidBlock");
 const { connectToPeers, getSockets } = require("./p2pServer");
 
