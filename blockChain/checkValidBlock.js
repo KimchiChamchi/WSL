@@ -73,8 +73,8 @@ function isValidChain(newBlocks) {
   }
 
   var tempBlocks = [newBlocks[0]];
-  for (let i = 0; i < newBlocks.length; i++) {
-    if (isValidNewBlock(newBlock[i], tempBlocks[i - 1])) {
+  for (let i = 1; i < newBlocks.length; i++) {
+    if (isValidNewBlock(newBlocks[i], tempBlocks[i - 1])) {
       tempBlocks.push(newBlocks[i]);
     } else {
       return false;
