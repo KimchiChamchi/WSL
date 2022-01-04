@@ -123,17 +123,6 @@ function calculateHash(
   difficulty,
   nonce
 ) {
-  //내용은 createHash와 같지만 블록이아닌 하나의 값을 그대로가져옴
-  const {
-    version,
-    index,
-    previousHash,
-    timestamp,
-    merkleRoot,
-    difficulty,
-    nonce,
-  } = data.header; // 해더에서 내용을 뽑아오는것
-  //전부다 blockString으로 합한다음에
   const blockString =
     version +
     index +
