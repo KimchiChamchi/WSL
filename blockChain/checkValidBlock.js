@@ -6,8 +6,7 @@ const merkle = require("merkle");
 const {
   Blocks,
   getLastBlock,
-  createHash,
-  nextBlock,
+  // createHash,
   isValidTimestamp,
   hashMatchesDifficulty,
 } = require("./chainedBlock");

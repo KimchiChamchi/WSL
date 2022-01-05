@@ -1,8 +1,9 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { getBlocks, nextBlock, getVersion } = require("./chainedBlock");
-const { addBlock, Blocks } = require("./checkValidBlock");
+const { addBlock } = require("./checkValidBlock");
 const { connectToPeers, getSockets } = require("./p2pServer");
+const { getPublicKeyFromWallet } = require("./encryption");
 
 const http_port = process.env.HTTP_PORT || 3001;
 
@@ -13,13 +14,13 @@ function initHttpServer() {
   // curl -H "Content-type:application/json" --data "{\"data\" : [ \"ws://localhost:6002\"]}"
   // curl -H "Content-type:application/json" --data "{\"data\" : [ \"ws://localhost:6003\"]}"
   app.post("/addPeers", (req, res) => {
-    const data = req.body.data;
+    const data = req.body.data || [];
     connectToPeers(data);
   });
 
   app.get("/peers", (req, res) => {
     let sockInfo = [];
-    console.log(getSockets());
+
     getSockets().forEach((s) => {
       sockInfo.push(s._socket.remoteAddress + ":" + s._socket.remotePort);
     });
@@ -43,9 +44,18 @@ function initHttpServer() {
     res.send(getVersion());
   });
 
-  app.post("/stop", (req, res) => {
-    res.send({ msg: "Stop Server" });
+  app.get("/stop", (req, res) => {
+    res.send({ msg: "서버 멈춰!" });
     process.exit();
+  });
+
+  app.get("/address", (req, res) => {
+    const address = getPublicKeyFromWallet().toString();
+    if (address != "") {
+      res.send({ address: address });
+    } else {
+      res.send("주소가 비었어!");
+    }
   });
 
   app.listen(http_port, () => {

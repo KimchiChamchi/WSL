@@ -2,7 +2,7 @@ const fs = require("fs");
 const merkle = require("merkle");
 const cryptojs = require("crypto-js");
 const random = require("random");
-const { broadcast } = require("./p2pServer");
+const { broadcast } = require("./p2pServer.js");
 
 const BLOCK_GENERATION_INTERVAL = 10; // second 블록 생성 간격(10초마다)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // in blocks 난이도 조정 간격(블록 10개마다)
