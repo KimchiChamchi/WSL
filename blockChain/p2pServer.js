@@ -2,7 +2,7 @@
 
 const WebSocket = require("ws");
 // 옆동네 JS에서 export 해놓은 함수 가져오기
-const { getLastBlock } = require("./chainedBlockasdf");
+const { getLastBlock } = require("./chainedBlock");
 const { addBlock } = require("./checkValidBlock");
 
 // P2P 서버 초기화 함수

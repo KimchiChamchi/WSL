@@ -4,11 +4,11 @@
 // 데이터 필드로부터 계산한 머클루트와 블록 헤더의 머클루트가 동일한지
 const merkle = require("merkle");
 const {
-  Blocks,
-  getLastBlock,
+  // Blocks,
+  // getLastBlock,
   // createHash,
-  isValidTimestamp,
-  hashMatchesDifficulty,
+  // isValidTimestamp,
+  // hashMatchesDifficulty,
 } = require("./chainedBlock");
 
 function isValidBlockStructure(block) {
