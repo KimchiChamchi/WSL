@@ -2,7 +2,7 @@ const fs = require("fs");
 const merkle = require("merkle");
 const cryptojs = require("crypto-js");
 const random = require("random");
-const { broadcast } = require("./p2pServer.js");
+// const { broadcast } = require("./p2pServer.js");
 
 const BLOCK_GENERATION_INTERVAL = 10; // second 블록 생성 간격(10초마다)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // in blocks 난이도 조정 간격(블록 10개마다)
@@ -56,7 +56,7 @@ function createGenesisBlock() {
   ];
   const tree = merkle("sha256").sync(body);
   const merkleRoot = tree.root() || "0".repeat(64);
-  const difficulty = 0;
+  const difficulty = 0; // 난이도 0으로 시작
   const nonce = 0;
 
   // console.log(
@@ -110,6 +110,7 @@ function createHash(data) {
     merkleRoot +
     difficulty +
     nonce;
+  // console.log(blockString);
   const hash = cryptojs.SHA256(blockString).toString();
   return hash;
 }
@@ -137,7 +138,7 @@ function calculateHash(
 
 const genesisBlock = createGenesisBlock();
 // const testHash = createHash(block);
-console.log(genesisBlock);
+// console.log(genesisBlock);
 
 function nextBlock(bodyData) {
   //
@@ -148,7 +149,7 @@ function nextBlock(bodyData) {
   const timestamp = parseInt(Date.now() / 1000);
   const tree = merkle("sha256").sync(bodyData);
   const merkleRoot = tree.root() || "0".repeat(64);
-  const difficulty = 0; //getDifficulty();
+  const difficulty = getDifficulty(getBlocks());
   // const nonce = 0;
 
   const header = findBlock(
@@ -166,10 +167,13 @@ function nextBlock(bodyData) {
 // console.log(block1);
 
 // 블록 추가하는 함수
-function addBlock(bodyData) {
-  // 들어온 인자(bodyData)로 새 블록을 만들고
-  const newBlock = nextBlock([bodyData]);
-  // push로 Blocks에 배열 젤 뒤에 넣는다
+// function addBlock(bodyData) {
+//   // 들어온 인자(bodyData)로 새 블록을 만들고
+//   // const newBlock = nextBlock([bodyData]);
+//   // push로 Blocks에 배열 젤 뒤에 넣는다
+//   Blocks.push(newBlock);
+// }
+function addBlock(newBlock) {
   Blocks.push(newBlock);
 }
 
@@ -260,8 +264,9 @@ function findBlock(
   }
 }
 
-// 난이도
+// 난이도 가조왕
 function getDifficulty(blocks) {
+  // blocks가 들어있는
   const lastBlock = blocks[blocks.length - 1];
   if (
     // 제네시스 블록이 아니고,
@@ -298,18 +303,36 @@ function getAdjustDifficulty(lastBlock, blocks) {
   }
 }
 
-// 시간 만드는 함수
+// 현재시간 만드는 함수
 function getCurrentTimestamp() {
-  return math.round(Date().getTime() / 1000);
+  // 날짜(Date)에서 시간(getTime)을 초단위로 만들어(/1000) 반올림한(round) 값을 반환
+  return Math.round(new Date().getTime() / 1000);
 }
 
 function isValidTimestamp(newBlock, prevBlock) {
-  if (newBlock.header.timestamp - prevBlock.header.timestamp > 60) {
+  // console.log("이건 이전블록 시간");
+  // console.log(prevBlock.header.timestamp);
+  // console.log("이건 다음블록 시간");
+  // console.log(newBlock.header.timestamp);
+  // console.log("이건 빼기한 시간");
+  // console.log(newBlock.header.timestamp - prevBlock.header.timestamp);
+  // 새로 만들 블록의 시간에서 이전블록이 만들어진 시간이 60초보다 크면
+  if (newBlock.header.timestamp - prevBlock.header.timestamp < 5) {
+    console.log("이전 블록 만들고부터 쿨타임이 아직 안지났음");
+    console.log(
+      "쿨타임 :",
+      60 - (newBlock.header.timestamp - prevBlock.header.timestamp)
+    );
     return false;
   }
+  // 새로 만든 블록이 만들어진 시간부터 검증하기까지 시간이 초과되면 무효화
+  // 유통기한 지난 식품 같은 느낌
   if (getCurrentTimestamp() - newBlock.header.timestamp > 60) {
+    console.log("블록이 만들어진지 좀 됐는데 검증을 너무 늦게 하셨네여");
     return false;
   }
+  // console.log(newBlock.header.timestamp);
+  // console.log(Math.round(Date().getTime() / 1000));
   return true;
 }
 
