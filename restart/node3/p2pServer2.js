@@ -11,6 +11,7 @@ function initP2PServer(portNum) {
   });
   console.log("웹 소켓 서버 " + portNum + "포트 초기화햇듬");
 }
+// 내 소켓서버는 6003번 포트!
 initP2PServer(6003);
 
 // 내가 연결할 사람들 주소록
@@ -51,21 +52,21 @@ function broadcast(message) {
   // });
 }
 
-// Peers(다른이들)에 연결하는 함수
+// Peers(다른이들)에 연결하기 위한 함수
 // httpServer.js 에서 웹 소켓 열어달란 요청(ws://localhost:6002 과 같은..)을 받아
 function connectToPeers(newPeers) {
-  // forEach로 요청받은 주소들 하나씩 열어주기
+  // forEach로 요청받은 주소들 하나씩 열려있나 확인
   newPeers.forEach((peer) => {
-    // 요청받은 주소에 새로운 웹 소켓 서버를 ws 변수에 저장
+    // 요청받은 주소에 맞는 웹 소켓정보를 ws 변수에 저장
     const ws = new WebSocket(peer);
-    // 해당 웹 소켓이 열리면 연결 초기화 해주기
+    // 해당 웹 소켓이 열려있으면 초기화 해주기(소통가능!)
     ws.on("open", () => {
-      console.log(peer + " 이 열렸어요!");
+      console.log(peer + "이 열려있어요!");
       initConnection(ws);
     });
     // 오류는 에러
     ws.on("error", () => {
-      console.log("웹소켓 여는데 무언가 문제가 잇다고 말할 수 있어요");
+      console.log(peer + "는 열려있지 않은가봐요");
     });
   });
 }
@@ -82,10 +83,12 @@ const MessageType = {
 
 // 메시지 핸들러 (받은 메시지에 맞게 답장 보내주기)
 function initMessageHandler(ws) {
+  // 메시지 받는게 있으면 들어옴
   ws.on("message", (data) => {
     // 받은 메시지는 <buffer 7b 22 74 79 70 65...>
     // 이걸 제이슨 형식으로 바꿔서 저장
     const message = JSON.parse(data);
+
     // 메시지 타입 따라 분기
     switch (message.type) {
       // 0: 상대가 마지막 블록 내놓으라 그러면
@@ -93,11 +96,13 @@ function initMessageHandler(ws) {
         // 상대에게 내 마지막 블록 정보 보내기
         write(ws, responseLatestMsg());
         break;
+
       // 1: 상대가 블록 전체 달라고 그러면
       case MessageType.QUERY_ALL:
         // 상대에게 내 블록 전체를 보내줌
         write(ws, responseAllChainMsg());
         break;
+
       // 2: 상대가 나에게 블록을 담아서 보내줬음
       case MessageType.RESPONSE_BLOCKCHAIN:
         // 내 블록이랑 비교해보고 답장해주기
@@ -115,6 +120,7 @@ function responseLatestMsg() {
     data: JSON.stringify([getLastBlock()]),
   };
 }
+
 // 내가 가진 블록체인 메시지에 담기
 function responseAllChainMsg() {
   const { getBlocks } = require("./chainedBlock2");
@@ -211,23 +217,21 @@ function queryLatestMsg() {
 
 // 연결 초기화 오류 핸들러
 function initErrorHandler(ws) {
-  // 연결이 닫혀도
+  // 해당 소켓이 닫혀있으면 연결목록에서 제거
   ws.on("close", () => {
-    // 꺼버려
     closeConnection(ws);
     console.log("연결 닫힘");
   });
-  // 연결에 오류가 나도
+  // 해당 소켓이 오류면 연결목록에서 제거
   ws.on("error", () => {
-    // 꺼버려
     closeConnection(ws);
     console.log("연결 초기화 오류");
   });
 }
 
-// 연결 꺼버리는 함수
+// 연결 목록에서 제거하는 함수
 function closeConnection(ws) {
-  console.log(`연결 멈춰! ${ws.url}`);
+  console.log(`${ws.url} 가 연결이 끊어졌어요`);
   // 연결이 끊어진 사람은 연락처에서 빼기
   sockets.splice(sockets.indexOf(ws), 1);
 }

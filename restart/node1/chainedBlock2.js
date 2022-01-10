@@ -33,7 +33,7 @@ class BlockHeader {
   }
 }
 
-// 블록체인 = Blocks
+// 내 블록체인이 담길 곳
 // 최초 블록(genesisBlock) 만들어서 첫번째 블록으로 저장
 let Blocks = [createGenesisBlock()];
 
@@ -67,8 +67,8 @@ function createGenesisBlock() {
   ];
   const tree = merkle("sha256").sync(body);
   const merkleRoot = tree.root() || "0".repeat(64);
-  const difficulty = 0; // 난이도 0으로 시작
-  const nonce = 0; // 앞으로 해시찾으면서 삽질할 때마다 늘어날 삽질 수
+  const difficulty = 0; // 난이도. 새로 만들 블록의 해시값에 제한을 주는 녀석
+  const nonce = 0; // 그동안 삽질한 횟수. 해시찾으면서 삽질할 때마다 늘려나갈것
 
   // 생성자로 헤더 구성하여
   const header = new BlockHeader(
@@ -168,11 +168,7 @@ function nextBlock(bodyData) {
 //   Blocks.push(newBlock);
 // }
 
-// 블록 구조가 유효한지
-// 현재 블록의 인덱스가 이전 블록의 인덱스보다 1만큼 큰지
-// 이전 블록의 해시값과 현재 블록의 이전 해시가 같은지
-// 데이터 필드로부터 계산한 머클루트와 블록 헤더의 머클루트가 동일한지
-
+// 블록 구조가 맞는지 검증해주는 함수
 function isValidBlockStructure(block) {
   return (
     typeof block.header.version === "string" &&
@@ -188,15 +184,19 @@ function isValidBlockStructure(block) {
 
 // 새 블록 검증하기
 function isValidNewBlock(newBlock, previousBlock) {
+  // 블록 구조가 맞는지
   if (isValidBlockStructure(newBlock) === false) {
     console.log("새 블록이 구조체의 조건에 맞지 않습니다");
     return false;
+    // 해당 블록의 인덱스가 이전 블록의 인덱스보다 1만큼 큰지
   } else if (newBlock.header.index !== previousBlock.header.index + 1) {
     console.log("새 블록 인덱스랑 이전블록 인덱스+1이 다릅니다");
     return false;
+    // 이전 블록의 해시값과 현재 블록의 이전 해시가 같은지
   } else if (createHash(previousBlock) !== newBlock.header.previousHash) {
     console.log("새 블록의 이전해시값이랑 이전 블록의 해시값이 다름");
     return false;
+    // 데이터 필드로부터 계산한 머클루트와 블록 헤더의 머클루트가 동일한지
   } else if (
     (newBlock.body.length === 0 &&
       "0".repeat(64) !== newBlock.header.merkleRoot) ||
@@ -293,7 +293,7 @@ function hexToBinary(Hexadecimal) {
   // 2진수 문자열을 담을 변수
   let binary = "";
 
-  // 16진수를 하나씩 넣어서 (예를 들면 48E2F19같은,)
+  // 16진수를 하나씩 넣어서 (예를 들면 "48E2F19"같은 )
   for (let i = 0; i < Hexadecimal.length; i++) {
     // 16진수를 2진수로 변환할 값이 일치하는 녀석을 찾아
     if (lookupTable[Hexadecimal[i]]) {
@@ -353,16 +353,16 @@ function findBlock(
   }
 }
 
-const BLOCK_GENERATION_INTERVAL = 10; // second 블록 생성 간격(10초마다)
-const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // in blocks 난이도 조정 간격(블록 10개마다)
+const BLOCK_GENERATION_INTERVAL = 10; // second 예상용 블록 생성 간격(10초마다)
+const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // block 난이도 조정 간격(블록 10개마다)
 // 난이도 가조왕
 function getDifficulty(blocks) {
-  // 마지막 블록 변수
+  // 마지막 블록 변수에 담기
   const lastBlock = blocks[blocks.length - 1];
   if (
-    // (처음 생성된)제네시스 블록이 아니고,
+    // (처음 생성된)마지막 블록이 제네시스 블록이 아니고,
     lastBlock.header.index !== 0 &&
-    // 블록이 10번째 때 마다
+    // 마지막블록 인덱스가 10으로 나눠떨어지면 (블록이 10번째 때 마다)
     lastBlock.header.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0
   ) {
     // 난이도 조정 함수로 난이도를 조정하고
@@ -374,28 +374,29 @@ function getDifficulty(blocks) {
 
 // 난이도 조정
 function getAdjustDifficulty(lastBlock, blocks) {
-  // 이전에 난이도가 조정된 블록
+  // 이전에 난이도가 조정된 블록은
   const prevAdjustmentBlock =
-    // = 현재 마지막 블록의 10번째 전
+    // 현재 마지막 블록의 10번째 전임
     blocks[blocks.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
-  // 경과 시간
+  // 경과 시간은
   const elapsedTime =
-    // = 10번째 전에 블록이 만들어지고부터 마지막 블록이 만들어질 때 까지
+    // 10번째 전에 블록이 만들어지고부터 마지막 블록이 만들어질 때 까지의 시간임
     lastBlock.header.timestamp - prevAdjustmentBlock.header.timestamp;
-  // 예상 시간
+  // 예상 시간은 = (100초)
   const expectedTime =
-    // = 10개 만드는
+    // 10개 만드는데 걸리는 예상 시간(10) * 난이도 조정할 간격(10)
     BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
 
-  // 예상시간/2 가 실제경과시간보다 크면
+  // 예상시간/2(50초)보다 실제경과시간이 작으면 (예상보다 51초이상 빨리 10개 채굴됐으면)
   if (expectedTime / 2 > elapsedTime) {
     // 난이도를 1 올림
     return prevAdjustmentBlock.header.difficulty + 1;
-    // 예상시간*2 가 실제경과시간보다 작으면
+    // 예상시간*2(200초)보다 실제경과시간이 크면 (예상보다 201초이상 늦게 10개 채굴됐으면)
   } else if (expectedTime * 2 < elapsedTime) {
     // 난이도를 1 내림
     return prevAdjustmentBlock.header.difficulty - 1;
   } else {
+    // 예상시간-50초와 예상시간-200초 사이면 난이도 그냥 냅두기
     return prevAdjustmentBlock.header.difficulty;
   }
 }
