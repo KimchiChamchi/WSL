@@ -38,15 +38,8 @@ function generatePrivateKey() {
   // genKeyPair로 랜덤한 키 쌍을 생성
   const keyPair = ec.genKeyPair();
   // 키 쌍의 priv 부분만 가져와서
-  console.log("keyPair!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-  console.log(keyPair);
   const privateKey = keyPair.getPrivate();
-  console.log("privateKey!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-  console.log(privateKey);
-  console.log(
-    "privateKey tostring!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  );
-  console.log(privateKey.toString(16)); // private_key 파일의 내용과 동일
+
   // 16진수로 변환
   return privateKey.toString(16);
 }
