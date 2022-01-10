@@ -213,15 +213,13 @@ function queryLatestMsg() {
 
 // 연결 초기화 오류 핸들러
 function initErrorHandler(ws) {
-  // 연결이 닫혀도
+  // 해당 소켓이 닫혀있으면 연결목록에서 제거
   ws.on("close", () => {
-    // 꺼버려
     closeConnection(ws);
     console.log("연결 닫힘");
   });
-  // 연결에 오류가 나도
+  // 해당 소켓이 오류면 연결목록에서 제거
   ws.on("error", () => {
-    // 꺼버려
     closeConnection(ws);
     console.log("연결 초기화 오류");
   });

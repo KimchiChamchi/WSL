@@ -4,7 +4,7 @@ const ec = new ecdsa.ec("secp256k1");
 
 // 비밀키 들어갈 경로는 wallet/PRIVATE_KEY환경변수      또는 wallet/default얏
 const privateKeyLocation =
-  "node2/wallet/" + (process.env.PRIVATE_KEY || "default");
+  "node3/wallet/" + (process.env.PRIVATE_KEY || "default");
 // 비밀키는 지갑 경로에 비밀키 private_key 라고 만들고양
 const privateKeyFile = privateKeyLocation + "/private_key";
 
@@ -16,8 +16,8 @@ function initWallet() {
     return;
   }
   // 지갑 경로가 없으면 경로 생성
-  if (!fs.existsSync("node2/wallet/")) {
-    fs.mkdirSync("node2/wallet/");
+  if (!fs.existsSync("node3/wallet/")) {
+    fs.mkdirSync("node3/wallet/");
     console.log("새 지갑을 장만었어요");
   }
   // 지갑 경로가 없으면 경로 생성
