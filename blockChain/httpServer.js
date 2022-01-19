@@ -1,7 +1,15 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { getBlocks, nextBlock, getVersion } = require("./chainedBlock");
-const { addBlock } = require("./checkValidBlock");
+const {
+  Blocks,
+  getBlocks,
+  nextBlock,
+  getVersion,
+  getLastBlock,
+} = require("./chainedBlock");
+// const { addBlock } = require("./checkValidBlock");
+const { addBlock } = require("./chainedBlock");
+const { isValidNewBlock } = require("./checkValidBlock");
 const { connectToPeers, getSockets } = require("./p2pServer");
 const { getPublicKeyFromWallet } = require("./encryption");
 
@@ -11,8 +19,11 @@ function initHttpServer() {
   const app = express();
   app.use(bodyParser.json());
 
-  // curl -H "Content-type:application/json" --data "{\"data\" : [ \"ws://localhost:6002\"]}"
-  // curl -H "Content-type:application/json" --data "{\"data\" : [ \"ws://localhost:6003\"]}"
+  // addPeers 할 때
+  // curl -H "Content-type:application/json" --data "{\"data\" : [ \"ws://localhost:6003\" ]}" http://localhost:3001/addPeers
+  // mineBlock 할 때
+  // curl -H "Content-type:application/json" --data "{\"data\" : [ \"김블록\" ]}" http://localhost:3001/mineBlock
+
   app.post("/addPeers", (req, res) => {
     const data = req.body.data || [];
     connectToPeers(data);
@@ -38,6 +49,14 @@ function initHttpServer() {
     addBlock(block);
 
     res.send(block);
+  });
+
+  app.post("/asdf", (req, res) => {
+    const lastblock = Blocks[Blocks.length - 1];
+    const prevBlock = Blocks[Blocks.length - 2];
+    console.log(lastblock);
+    console.log(prevBlock);
+    console.log(isValidNewBlock(lastblock, prevBlock));
   });
 
   app.get("/version", (req, res) => {

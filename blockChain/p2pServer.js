@@ -2,7 +2,7 @@
 
 const WebSocket = require("ws");
 // 옆동네 JS에서 export 해놓은 함수 가져오기
-const { getLastBlock } = require("./chainedBlock");
+const { getLastBlock, replaceChain } = require("./chainedBlock");
 const { addBlock } = require("./checkValidBlock");
 
 // P2P 서버 초기화 함수
@@ -28,7 +28,7 @@ function initConnection(ws) {
   sockets.push(ws);
   initMessageHandler(ws);
   initErrorHandler(ws);
-  write(ws, queryLatesMsg());
+  write(ws, queryLatestMsg());
 }
 
 // 소켓목록 받아오는 함수
@@ -104,6 +104,7 @@ function initMessageHandler(ws) {
     }
   });
 }
+
 //내가 가지고있는 블록중에 최신블록
 function responseLatestMsg() {
   return {
@@ -115,6 +116,13 @@ function responseAllChainMsg() {
   return {
     type: RESPONSE_BLOCKCHAIN,
     data: JSON.stringify(getBlocks()),
+  };
+}
+function responseBlockMsg() {
+  return {
+    type: MessageAction.RESPONSE_BLOCK,
+    data: JSON.stringify(bc.getBlocks()),
+    // getBlock() 에서 가져오는 건 배열이어서 굳이 []로 감싸지않아도 된다.
   };
 }
 //블록을 받았을때 한개인지 여러개인지
@@ -143,6 +151,7 @@ function handleBlockChainResponse() {
     else if (receiveBlocks.length === 1) {
       broadcast(queryAllMsg());
     } else {
+      // 다른이에게 전달받은 블록으로 교체하기
       replaceChain(receiveBlocks);
     }
   } else {
@@ -152,14 +161,14 @@ function handleBlockChainResponse() {
 
 function queryAllMsg() {
   return {
-    type: QUERY_ALL,
+    type: MessageType.QUERY_ALL,
     data: null,
   };
 }
 
-function queryLatesMsg() {
+function queryLatestMsg() {
   return {
-    type: QUERY_LATEST,
+    type: MessageType.QUERY_LATEST,
     data: null,
   };
 }
@@ -170,11 +179,13 @@ function initErrorHandler(ws) {
   ws.on("close", () => {
     // 꺼버려
     closeConnection(ws);
+    console.log("연결 초기화 오류1");
   });
   // 연결에 오류가 나도
   ws.on("error", () => {
     // 꺼버려
     closeConnection(ws);
+    console.log("연결 초기화 오류2");
   });
 }
 

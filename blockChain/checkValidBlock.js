@@ -4,11 +4,11 @@
 // 데이터 필드로부터 계산한 머클루트와 블록 헤더의 머클루트가 동일한지
 const merkle = require("merkle");
 const {
-  // Blocks,
-  // getLastBlock,
-  // createHash,
-  // isValidTimestamp,
-  // hashMatchesDifficulty,
+  Blocks,
+  getLastBlock,
+  createHash,
+  isValidTimestamp,
+  hashMatchesDifficulty,
 } = require("./chainedBlock");
 
 function isValidBlockStructure(block) {
@@ -48,11 +48,13 @@ function isValidNewBlock(newBlock, previousBlock) {
     console.log("시간이 잘못됐어");
     return false;
   } else if (
+    // 난이도 검증
     hashMatchesDifficulty(createHash(newBlock), newBlock.header.difficulty)
   ) {
     console.log("해시가 잘못됨");
     return false;
   }
+  console.log("검증완료");
   return true;
 }
 
@@ -89,4 +91,5 @@ function isValidChain(newBlocks) {
 
 module.exports = {
   addBlock,
+  isValidNewBlock,
 };

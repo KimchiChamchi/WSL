@@ -115,6 +115,7 @@ function createHash(data) {
   return hash;
 }
 
+// 해시 계산 함수 ()
 function calculateHash(
   version,
   index,
@@ -140,6 +141,7 @@ const genesisBlock = createGenesisBlock();
 // const testHash = createHash(block);
 // console.log(genesisBlock);
 
+// 다음 블록을 만들 때
 function nextBlock(bodyData) {
   //
   const prevBlock = getLastBlock();
@@ -177,6 +179,7 @@ function addBlock(newBlock) {
   Blocks.push(newBlock);
 }
 
+// 체인 교체
 function replaceChain(newBlocks) {
   if (isValidChain(newBlocks)) {
     if (
@@ -191,7 +194,8 @@ function replaceChain(newBlocks) {
   }
 }
 
-function hexToBinary(s) {
+// 받은 16진수 인자를 2진수로 휘리릭
+function hexToBinary(Hexadecimal) {
   const lookupTable = {
     0: "0000",
     1: "0001",
@@ -210,15 +214,21 @@ function hexToBinary(s) {
     E: "1110",
     F: "1111",
   };
-  let ret = "";
-  for (let i = 0; i < s.length; i++) {
-    if (lookupTable[s[i]]) {
-      ret += lookupTable[s[i]];
+  // 2진수 문자열을 담을 변수
+  let binary = "";
+
+  // 16진수를 하나씩 넣어서 (예를 들면 48E2F19같은,)
+  for (let i = 0; i < Hexadecimal.length; i++) {
+    // 16진수를 2진수로 변환할 값이 일치하는 녀석을 찾아
+    if (lookupTable[Hexadecimal[i]]) {
+      // binary변수에 차곡차곡
+      binary += lookupTable[Hexadecimal[i]];
+      // 0~F 외의 인자가 들어오면 null (암것도 안나옴)
     } else {
       return null;
     }
   }
-  return ret;
+  return binary;
 }
 
 // 난이도에 따라 찾을 해시값 바꿔주는 함수
@@ -266,37 +276,43 @@ function findBlock(
 
 // 난이도 가조왕
 function getDifficulty(blocks) {
-  // blocks가 들어있는
+  // 마지막 블록 변수
   const lastBlock = blocks[blocks.length - 1];
   if (
-    // 제네시스 블록이 아니고,
+    // (처음 생성된)제네시스 블록이 아니고,
     lastBlock.header.index !== 0 &&
     // 블록이 10번째 때 마다
     lastBlock.header.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0
   ) {
-    // 난이도 조절
+    // 난이도 조정 함수로 난이도를 조정하고
     return getAdjustDifficulty(lastBlock, blocks);
   }
+  // (조정된)난이도를 반환
   return lastBlock.header.difficulty;
 }
 
 // 난이도 조정
 function getAdjustDifficulty(lastBlock, blocks) {
-  // 이전 조정 블록?
+  // 이전에 난이도가 조정된 블록
   const prevAdjustmentBlock =
+    // = 현재 마지막 블록의 10번째 전
     blocks[blocks.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
-  // 실제 경과 시간
+  // 경과 시간
   const elapsedTime =
+    // = 10번째 전에 블록이 만들어지고부터 마지막 블록이 만들어질 때 까지
     lastBlock.header.timestamp - prevAdjustmentBlock.header.timestamp;
   // 예상 시간
   const expectedTime =
+    // = 10개 만드는
     BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
 
   // 예상시간/2 가 실제경과시간보다 크면
   if (expectedTime / 2 > elapsedTime) {
+    // 난이도를 1 올림
     return prevAdjustmentBlock.header.difficulty + 1;
     // 예상시간*2 가 실제경과시간보다 작으면
   } else if (expectedTime * 2 < elapsedTime) {
+    // 난이도를 1 내림
     return prevAdjustmentBlock.header.difficulty - 1;
   } else {
     return prevAdjustmentBlock.header.difficulty;
@@ -346,4 +362,5 @@ module.exports = {
   addBlock,
   isValidTimestamp,
   hashMatchesDifficulty,
+  replaceChain,
 };
