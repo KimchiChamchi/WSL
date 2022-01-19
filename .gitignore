@@ -1,6 +1,6 @@
 node_modules
 wallet
-# blockChain
+blockChain
 blockChain-server
 kill.sh
 restart.sh
