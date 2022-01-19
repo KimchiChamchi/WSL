@@ -184,17 +184,22 @@ function isValidBlockStructure(block) {
 
 // 새 블록 검증하기
 function isValidNewBlock(newBlock, previousBlock) {
+  console.log(newBlock.body, "블록을 검사합니다");
+
   // 블록 구조가 맞는지
   if (isValidBlockStructure(newBlock) === false) {
-    console.log("새 블록이 구조체의 조건에 맞지 않습니다");
+    console.log(newBlock.body, "블록이 구조체의 조건에 맞지 않습니다");
     return false;
     // 해당 블록의 인덱스가 이전 블록의 인덱스보다 1만큼 큰지
   } else if (newBlock.header.index !== previousBlock.header.index + 1) {
-    console.log("새 블록 인덱스랑 이전블록 인덱스+1이 다릅니다");
+    console.log(newBlock.body, "블록 인덱스랑 이전블록 인덱스+1이 다릅니다");
     return false;
     // 이전 블록의 해시값과 현재 블록의 이전 해시가 같은지
   } else if (createHash(previousBlock) !== newBlock.header.previousHash) {
-    console.log("새 블록의 이전해시값이랑 이전 블록의 해시값이 다름");
+    console.log(
+      newBlock.body,
+      "블록의 이전해시값이랑 이전 블록의 해시값이 다름"
+    );
     return false;
     // 데이터 필드로부터 계산한 머클루트와 블록 헤더의 머클루트가 동일한지
   } else if (
@@ -204,19 +209,20 @@ function isValidNewBlock(newBlock, previousBlock) {
       merkle("sha256").sync(newBlock.body).root() !==
         newBlock.header.merkleRoot)
   ) {
-    console.log("머클루트 잘못됨");
+    console.log(newBlock.body, "블록의 머클루트가 잘못됨");
     return false;
   } else if (!isValidTimestamp(newBlock, previousBlock)) {
-    console.log("시간이 잘못됐어");
+    console.log(newBlock.body, "블록의 타임스탬프가 잘못됐음");
     return false;
   } else if (
-    // 새로 만든 블록으로 난이도 검증
+    // 새 블록의 해시값의 앞부분은 난이도만큼 0으로 채워져있어야 한다.
+    // 새로 만든 블록으로 난이도가 정상인지 검증
     !hashMatchesDifficulty(createHash(newBlock), newBlock.header.difficulty)
   ) {
-    console.log("해시가 잘못됨");
+    console.log(newBlock, "블록의 난이도와 해시머리값이 안맞음");
     return false;
   }
-  console.log("검증완료");
+  console.log(newBlock.body, "블록 검증완료");
   return true;
 }
 

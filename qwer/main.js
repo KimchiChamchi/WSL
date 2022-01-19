@@ -1,10 +1,14 @@
+// HTTP Server 초기화, P2P Server 초기화, 지갑 초기화
+// (사용자와 노드 간의 통신)
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const Chain = require("./chainedBlock2");
+const UTILS = require("./utils");
 const P2P_SERVER = require("./p2pServer2");
 const wallet = require("./encryption2");
 
-const http_port = process.env.HTTP_PORT || 3001;
+const http_port = process.env.HTTP_PORT || 3002;
 
 function initHttpServer() {
   const app = express();
@@ -16,7 +20,7 @@ function initHttpServer() {
   // curl -H "Content-type:application/json" --data "{\"data\" : [ \"김블록\" ]}" http://localhost:3001/mineBlock
 
   // 내가 가진 블록체인이 담긴 페이지
-  app.get("/blocks", (req, res) => {
+  app.get("/myBlockchain", (req, res) => {
     res.send(Chain.getBlocks());
   });
 
@@ -28,19 +32,6 @@ function initHttpServer() {
     // 블록 생성해서 검증 거쳐 체인에 붙이면 소문내기
     P2P_SERVER.broadcast(P2P_SERVER.responseAllChainMsg());
     res.send(block);
-  });
-
-  // 자동채굴하기
-  app.post("/autoMining", (req, res) => {
-    for (let i = 0; i < 10; i++) {
-      const data = req.body.data || [];
-      const block = Chain.nextBlock(data);
-      Chain.addBlock(block);
-      // 블록 생성해서 검증 거쳐 체인에 붙이면 소문내기
-      P2P_SERVER.broadcast(P2P_SERVER.responseAllChainMsg());
-    }
-    // send는 한번만 써야함
-    res.send(Chain.getLastBlock());
   });
 
   // 타임스탬프 검증 테스트용
@@ -96,3 +87,5 @@ function initHttpServer() {
 }
 
 initHttpServer();
+initP2PServer();
+initWallet();

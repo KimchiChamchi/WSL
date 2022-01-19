@@ -1,3 +1,5 @@
+// 블록의 생성, 검증, 합의 알고리즘을 포함 / 프로토콜을 담당
+
 const fs = require("fs");
 const merkle = require("merkle");
 const cryptojs = require("crypto-js");
@@ -35,23 +37,7 @@ class BlockHeader {
 
 // 내 블록체인이 담길 곳
 // 최초 블록(genesisBlock) 만들어서 첫번째 블록으로 저장
-let Blocks = [createGenesisBlock()];
-
-// 내 블록체인 불러오는 함수
-function getBlocks() {
-  return Blocks;
-}
-
-// 내 블록체인의 마지막(최신) 블록 불러오는 함수
-function getLastBlock() {
-  return Blocks[Blocks.length - 1];
-}
-
-// package.json에 들어있는 버전 가져오는 함수
-function getVersion() {
-  const package = fs.readFileSync("package.json");
-  return JSON.parse(package).version;
-}
+const blockchain = [createGenesisBlock()];
 
 // 최초블록 만드는 함수 (최초블록은 컴퓨터가 찾는게 아니라 사람이 임의로 정의함)
 function createGenesisBlock() {
@@ -68,7 +54,7 @@ function createGenesisBlock() {
   const tree = merkle("sha256").sync(body);
   const merkleRoot = tree.root() || "0".repeat(64);
   const difficulty = 0; // 난이도. 새로 만들 블록의 해시값에 제한을 주는 녀석
-  const nonce = 0; // 그동안 삽질한 횟수. 해시찾으면서 삽질할 때마다 늘려나갈것
+  const nonce = 0; // 삽질 수. 해시찾으면서 삽질할 때마다 늘려나갈것
 
   // 생성자로 헤더 구성하여
   const header = new BlockHeader(
@@ -81,53 +67,6 @@ function createGenesisBlock() {
     nonce
   ); // 블록으로 만들어 반환
   return new Block(header, body);
-}
-
-// 해시 만들어주는 함수
-function createHash(data) {
-  const {
-    version,
-    index,
-    previousHash,
-    timestamp,
-    merkleRoot,
-    difficulty,
-    nonce,
-  } = data.header;
-  const blockString =
-    version +
-    index +
-    previousHash +
-    timestamp +
-    merkleRoot +
-    difficulty +
-    nonce;
-  // 클래스에 들어있는 것들을 다 더해서 SHA256를 통해 암호화하여 나온
-  // 16진수 64자리 임의의 문자열의 값을 hash에 담아 반환한다
-  const hash = cryptojs.SHA256(blockString).toString();
-  return hash;
-}
-
-// 다음 블록 채굴을 위해 해시 계산하는 함수
-function calculateHash(
-  version,
-  index,
-  previousHash,
-  timestamp,
-  merkleRoot,
-  difficulty,
-  nonce
-) {
-  const blockString =
-    version +
-    index +
-    previousHash +
-    timestamp +
-    merkleRoot +
-    difficulty +
-    nonce;
-  const hash = cryptojs.SHA256(blockString).toString();
-  return hash;
 }
 
 // 다음 블록을 만들 때
@@ -161,11 +100,11 @@ function nextBlock(bodyData) {
 // function addBlock(bodyData) {
 //   // 들어온 인자(bodyData)로 새 블록을 만들고
 //   // const newBlock = nextBlock([bodyData]);
-//   // push로 Blocks에 배열 젤 뒤에 넣는다
-//   Blocks.push(newBlock);
+//   // push로 blockchain에 배열 젤 뒤에 넣는다
+//   blockchain.push(newBlock);
 // }
 // function addBlock(newBlock) {
-//   Blocks.push(newBlock);
+//   blockchain.push(newBlock);
 // }
 
 // 블록 구조가 맞는지 검증해주는 함수
@@ -184,7 +123,7 @@ function isValidBlockStructure(block) {
 
 // 새 블록 검증하기
 function isValidNewBlock(newBlock, previousBlock) {
-  console.log(newBlock.body, "블록을 검사합니다");
+  console.log(newBlock.body);
 
   // 블록 구조가 맞는지
   if (isValidBlockStructure(newBlock) === false) {
@@ -222,15 +161,14 @@ function isValidNewBlock(newBlock, previousBlock) {
     console.log(newBlock, "블록의 난이도와 해시머리값이 안맞음");
     return false;
   }
-  console.log(newBlock.body, "블록 검증완료");
+  console.log(newBlock, "블록 검증완료");
   return true;
 }
 
 // 블록 추가하기
 function addBlock(newBlock) {
   if (isValidNewBlock(newBlock, getLastBlock())) {
-    Blocks.push(newBlock);
-
+    blockchain.push(newBlock);
     return true;
   }
   return false;
@@ -238,7 +176,7 @@ function addBlock(newBlock) {
 
 // 체인 검증하기
 function isValidChain(newBlocks) {
-  if (JSON.stringify(newBlocks[0]) !== JSON.stringify(Blocks[0])) {
+  if (JSON.stringify(newBlocks[0]) !== JSON.stringify(blockchain[0])) {
     return false;
   }
 
@@ -259,12 +197,12 @@ function replaceChain(newBlocks) {
   if (isValidChain(newBlocks)) {
     if (
       // 그 블록체인이 내 블록체인보다 길면 ||(또는)
-      newBlocks.length > Blocks.length ||
+      newBlocks.length > blockchain.length ||
       // 양 블록체인이 길이가 같을때 && 그냥 복불복 random.boolean()
-      (newBlocks.length === Blocks.length && random.boolean())
+      (newBlocks.length === blockchain.length && random.boolean())
     ) {
       // 내 블록체인을 전달받은 블록체인으로 교체하고
-      Blocks = newBlocks;
+      blockchain = newBlocks;
       // 이 새로운 블록체인의 마지막 블록을 널리 알리기
       P2P_SERVER.broadcast(P2P_SERVER.responseLatestMsg());
     }
@@ -274,43 +212,6 @@ function replaceChain(newBlocks) {
     // 전달받은 블록체인이 내것보다 인덱스는 큰데 길이가 짧으면 뭔가 잘못된 블록체인인것.
     console.log("받은 원장에 문제가 잇음");
   }
-}
-
-// 받은 16진수 인자를 2진수로 휘리릭
-function hexToBinary(Hexadecimal) {
-  const lookupTable = {
-    0: "0000",
-    1: "0001",
-    2: "0010",
-    3: "0011",
-    4: "0100",
-    5: "0101",
-    6: "0110",
-    7: "0111",
-    8: "1000",
-    9: "1001",
-    A: "1010",
-    B: "1011",
-    C: "1100",
-    D: "1101",
-    E: "1110",
-    F: "1111",
-  };
-  // 2진수 문자열을 담을 변수
-  let binary = "";
-
-  // 16진수를 하나씩 넣어서 (예를 들면 "48E2F19"같은 )
-  for (let i = 0; i < Hexadecimal.length; i++) {
-    // 16진수를 2진수로 변환할 값이 일치하는 녀석을 찾아
-    if (lookupTable[Hexadecimal[i]]) {
-      // binary변수에 차곡차곡
-      binary += lookupTable[Hexadecimal[i]];
-      // 0~F 외의 인자가 들어오면 null (암것도 안나옴)
-    } else {
-      return null;
-    }
-  }
-  return binary;
 }
 
 // 난이도에 따라 찾을 해시값 바꿔주는 함수
@@ -359,7 +260,7 @@ function findBlock(
   }
 }
 
-const BLOCK_GENERATION_INTERVAL = 10; // second 예상용 블록 생성 간격(10초마다)
+const BLOCK_GENERATION_INTERVAL = 10; // second 예상 블록 생성 간격(10초마다)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // block 난이도 조정 간격(블록 10개마다)
 // 난이도 가조왕
 function getDifficulty(blocks) {
@@ -380,37 +281,30 @@ function getDifficulty(blocks) {
 
 // 난이도 조정
 function getAdjustDifficulty(lastBlock, blocks) {
-  // 이전에 난이도가 조정된 블록은
+  // 이전에 난이도가 조정된 블록
   const prevAdjustmentBlock =
-    // 현재 마지막 블록의 10번째 전임
+    // = 현재 마지막 블록의 10번째 전
     blocks[blocks.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
-  // 경과 시간은
+  // 경과 시간
   const elapsedTime =
-    // 10번째 전에 블록이 만들어지고부터 마지막 블록이 만들어질 때 까지의 시간임
+    // = 10번째 전에 블록이 만들어지고부터 마지막 블록이 만들어질 때 까지
     lastBlock.header.timestamp - prevAdjustmentBlock.header.timestamp;
-  // 예상 시간은 = (100초)
+  // 예상 시간
   const expectedTime =
-    // 10개 만드는데 걸리는 예상 시간(10) * 난이도 조정할 간격(10)
+    // = 10개 만드는
     BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
 
-  // 예상시간/2(50초)보다 실제경과시간이 작으면 (예상보다 51초이상 빨리 10개 채굴됐으면)
+  // 예상시간/2 가 실제경과시간보다 크면
   if (expectedTime / 2 > elapsedTime) {
     // 난이도를 1 올림
     return prevAdjustmentBlock.header.difficulty + 1;
-    // 예상시간*2(200초)보다 실제경과시간이 크면 (예상보다 201초이상 늦게 10개 채굴됐으면)
+    // 예상시간*2 가 실제경과시간보다 작으면
   } else if (expectedTime * 2 < elapsedTime) {
     // 난이도를 1 내림
     return prevAdjustmentBlock.header.difficulty - 1;
   } else {
-    // 예상시간-50초와 예상시간-200초 사이면 난이도 그냥 냅두기
     return prevAdjustmentBlock.header.difficulty;
   }
-}
-
-// 현재시간 만드는 함수
-function getCurrentTimestamp() {
-  // 날짜(Date)에서 시간(getTime)을 초단위로 만들어(/1000) 반올림한(round) 값을 반환
-  return Math.round(new Date().getTime() / 1000);
 }
 
 // 네트워크 시간의 오차 허용 범위
@@ -422,8 +316,28 @@ function isValidTimestamp(newBlock, prevBlock) {
   return true;
 }
 
+// 타임스탬프 검증 잘못 이해한것 ...
+// function isValidTimestamp(newBlock, prevBlock) {
+//   //
+//   if ((newBlock.header.timestamp - prevBlock.header.timestamp) > 60) {
+//     console.log("");
+//     console.log(
+//       "쿨타임 :",
+//       60 - (newBlock.header.timestamp - prevBlock.header.timestamp)
+//     );
+//     return false;
+//   }
+//   // 새로 만든 블록이 만들어진 시간부터 검증하기까지 시간이 초과되면 무효화
+//   // (예시 - 케익을 만들었는데 케익이 상하기 전에 품질검사 받고 냉동고에 넣어야한다)
+//   if (getCurrentTimestamp() - newBlock.header.timestamp > 60) {
+//     console.log("블록이 만들어진지 좀 됐는데 검증을 너무 늦게 하셨네여");
+//     return false;
+//   }
+//   return true;
+// }
+
 module.exports = {
-  Blocks,
+  blockchain,
   createHash,
   getLastBlock,
   nextBlock,
@@ -435,3 +349,5 @@ module.exports = {
   hashMatchesDifficulty,
   replaceChain,
 };
+
+// 기존 chainedBlock.js
